@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -108,20 +109,15 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       <nav className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
         <a href="/dashboard" className="text-xl font-bold text-green-600">FaithDesk</a>
         <a href="/dashboard" className="text-sm text-gray-500 hover:underline">Back to dashboard</a>
       </nav>
-
       <div className="max-w-6xl mx-auto px-6 py-8">
-
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">Members</h2>
-            <p className="text-gray-500 text-sm mt-1">
-              {filtered.length} of {members.length} members
-            </p>
+            <p className="text-gray-500 text-sm mt-1">{filtered.length} of {members.length} members</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -137,42 +133,19 @@ export default function MembersPage() {
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
-                <input
-                  type="text"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  required
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Kofi Mensah"
-                />
+                <input type="text" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Kofi Mensah" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="+233 XX XXX XXXX"
-                />
+                <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="+233 XX XXX XXXX" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="kofi@email.com"
-                />
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="kofi@email.com" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                <select
-                  value={form.gender}
-                  onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
+                <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                   <option value="">Select gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -180,34 +153,19 @@ export default function MembersPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date of birth</label>
-                <input
-                  type="date"
-                  value={form.date_of_birth}
-                  onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
+                <input type="date" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                   <option value="visitor">Visitor</option>
                 </select>
               </div>
-
               {error && <p className="text-red-500 text-sm col-span-2">{error}</p>}
-
               <div className="col-span-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition disabled:opacity-50"
-                >
+                <button type="submit" disabled={saving} className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition disabled:opacity-50">
                   {saving ? 'Saving...' : 'Save member'}
                 </button>
               </div>
@@ -217,38 +175,20 @@ export default function MembersPage() {
 
         <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or phone..."
-              className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            />
-            <select
-              value={filterGender}
-              onChange={(e) => setFilterGender(e.target.value)}
-              className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or phone..." className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <select value={filterGender} onChange={(e) => setFilterGender(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
               <option value="">All genders</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
             </select>
-            <select
-              value={filterAge}
-              onChange={(e) => setFilterAge(e.target.value)}
-              className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
+            <select value={filterAge} onChange={(e) => setFilterAge(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
               <option value="">All age groups</option>
               <option value="children">Children (under 13)</option>
               <option value="youth">Youth (13-24)</option>
               <option value="adult">Adult (25-59)</option>
               <option value="senior">Senior (60+)</option>
             </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
               <option value="">All statuses</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -256,10 +196,7 @@ export default function MembersPage() {
             </select>
           </div>
           {activeFilters > 0 && (
-            <button
-              onClick={clearFilters}
-              className="mt-2 text-sm text-green-600 hover:underline"
-            >
+            <button onClick={clearFilters} className="mt-2 text-sm text-green-600 hover:underline">
               Clear all filters ({activeFilters} active)
             </button>
           )}
@@ -270,9 +207,7 @@ export default function MembersPage() {
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
             <p className="text-gray-400 text-lg">No members found</p>
-            <p className="text-gray-400 text-sm mt-1">
-              {members.length === 0 ? 'Click "+ Add member" to get started' : 'Try adjusting your filters'}
-            </p>
+            <p className="text-gray-400 text-sm mt-1">{members.length === 0 ? 'Click "+ Add member" to get started' : 'Try adjusting your filters'}</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -297,26 +232,15 @@ export default function MembersPage() {
                     <td className="px-6 py-4 text-sm text-gray-600">{member.phone || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{member.gender || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {getAge(member.date_of_birth) !== null ? (
-                        <span>{getAge(member.date_of_birth)} yrs</span>
-                      ) : '-'}
+                      {getAge(member.date_of_birth) !== null ? <span>{getAge(member.date_of_birth)} yrs</span> : '-'}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        member.status === 'active' ? 'bg-green-100 text-green-700' :
-                        member.status === 'visitor' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${member.status === 'active' ? 'bg-green-100 text-green-700' : member.status === 'visitor' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                         {member.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleDelete(member.id)}
-                        className="text-red-400 hover:text-red-600 text-sm"
-                      >
-                        Delete
-                      </button>
+                      <button onClick={() => handleDelete(member.id)} className="text-red-400 hover:text-red-600 text-sm">Delete</button>
                     </td>
                   </tr>
                 ))}
