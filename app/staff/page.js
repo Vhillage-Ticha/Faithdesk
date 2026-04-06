@@ -36,18 +36,15 @@ export default function DashboardPage() {
 
   const fetchStats = async (churchId) => {
     const thisMonth = new Date().toISOString().slice(0, 7)
-
     const [membersRes, departmentsRes, contributionsRes, servicesRes] = await Promise.all([
       supabase.from('members').select('id', { count: 'exact' }).eq('church_id', churchId).eq('status', 'active'),
       supabase.from('departments').select('id', { count: 'exact' }).eq('church_id', churchId),
       supabase.from('contributions').select('amount').eq('church_id', churchId).gte('contributed_on', thisMonth + '-01'),
       supabase.from('services').select('id').eq('church_id', churchId).order('service_date', { ascending: false }).limit(1),
     ])
-
     const totalMembers = membersRes.count || 0
     const totalDepartments = departmentsRes.count || 0
     const thisMonthOffering = (contributionsRes.data || []).reduce((sum, c) => sum + parseFloat(c.amount || 0), 0)
-
     let presentLastService = 0
     if (servicesRes.data && servicesRes.data.length > 0) {
       const lastServiceId = servicesRes.data[0].id
@@ -58,7 +55,6 @@ export default function DashboardPage() {
         .eq('present', true)
       presentLastService = attendanceRes.count || 0
     }
-
     setStats({ totalMembers, presentLastService, thisMonthOffering, totalDepartments })
   }
 
