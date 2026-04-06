@@ -26,7 +26,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-md p-8">
-        
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-green-600">FaithDesk</h1>
           <p className="text-gray-500 mt-1">Church Management Platform</p>
@@ -84,4 +84,4 @@ export default function LoginPage() {
       </div>
     </div>
   )
-// }
+}
