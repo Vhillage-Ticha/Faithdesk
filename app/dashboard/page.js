@@ -18,11 +18,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          router.push('/')
-          return
-        }
+       const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/')
+      return
+    }
+  }
         setUser(session.user)
         await fetchStats(session.user.id)
       } catch (err) {

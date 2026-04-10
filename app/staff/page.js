@@ -4,140 +4,223 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
-export default function DashboardPage() {
-  const [user, setUser] = useState(null)
+export default function StaffPage() {
+  const [staffList, setStaffList] = useState([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalMembers: 0,
-    presentLastService: 0,
-    thisMonthOffering: 0,
-    totalDepartments: 0,
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [form, setForm] = useState({
+    full_name: '',
+    email: '',
+    password: '',
+    role: 'viewer',
   })
   const router = useRouter()
 
   useEffect(() => {
     const init = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          router.push('/')
-          return
-        }
-        setUser(session.user)
-        await fetchStats(session.user.id)
-      } catch (err) {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
         router.push('/')
-      } finally {
-        setLoading(false)
+        return
       }
+      fetchStaff(session.user.id)
     }
     init()
   }, [router])
 
-  const fetchStats = async (churchId) => {
-    const thisMonth = new Date().toISOString().slice(0, 7)
-    const [membersRes, departmentsRes, contributionsRes, servicesRes] = await Promise.all([
-      supabase.from('members').select('id', { count: 'exact' }).eq('church_id', churchId).eq('status', 'active'),
-      supabase.from('departments').select('id', { count: 'exact' }).eq('church_id', churchId),
-      supabase.from('contributions').select('amount').eq('church_id', churchId).gte('contributed_on', thisMonth + '-01'),
-      supabase.from('services').select('id').eq('church_id', churchId).order('service_date', { ascending: false }).limit(1),
-    ])
-    const totalMembers = membersRes.count || 0
-    const totalDepartments = departmentsRes.count || 0
-    const thisMonthOffering = (contributionsRes.data || []).reduce((sum, c) => sum + parseFloat(c.amount || 0), 0)
-    let presentLastService = 0
-    if (servicesRes.data && servicesRes.data.length > 0) {
-      const lastServiceId = servicesRes.data[0].id
-      const attendanceRes = await supabase
-        .from('attendance')
-        .select('id', { count: 'exact' })
-        .eq('service_id', lastServiceId)
-        .eq('present', true)
-      presentLastService = attendanceRes.count || 0
+  const fetchStaff = async (churchId) => {
+    const { data, error } = await supabase
+      .from('church_users')
+      .select('*')
+      .eq('church_id', churchId)
+      .order('created_at', { ascending: false })
+    if (!error) setStaffList(data || [])
+    setLoading(false)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    setSuccess('')
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setSaving(false); return }
+
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          church_name: session.user.user_metadata?.church_name,
+          role: form.role,
+          church_id: session.user.id,
+        }
+      }
+    })
+
+    if (signUpError) {
+      setError(signUpError.message)
+      setSaving(false)
+      return
     }
-    setStats({ totalMembers, presentLastService, thisMonthOffering, totalDepartments })
+
+    const { error: dbError } = await supabase
+      .from('church_users')
+      .insert([{
+        church_id: session.user.id,
+        email: form.email,
+        full_name: form.full_name,
+        role: form.role,
+      }])
+
+    if (dbError) {
+      setError(dbError.message)
+    } else {
+      setSuccess(`Account created for ${form.full_name}! They can log in with ${form.email}`)
+      setForm({ full_name: '', email: '', password: '', role: 'viewer' })
+      setShowForm(false)
+      fetchStaff(session.user.id)
+    }
+    setSaving(false)
   }
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+  const handleDelete = async (id, email) => {
+    if (!confirm(`Remove ${email} from your staff list?`)) return
+    await supabase.from('church_users').delete().eq('id', id)
+    const { data: { session } } = await supabase.auth.getSession()
+    fetchStaff(session.user.id)
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    )
+  const roleColors = {
+    admin: 'bg-purple-100 text-purple-700',
+    finance: 'bg-green-100 text-green-700',
+    secretary: 'bg-blue-100 text-blue-700',
+    viewer: 'bg-gray-100 text-gray-600',
   }
 
-  const churchName = user?.user_metadata?.church_name || 'Your Church'
+  const roleDescriptions = {
+    admin: 'Full access to everything',
+    finance: 'Contributions and reports only',
+    secretary: 'Members and attendance only',
+    viewer: 'Read-only access',
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-green-600">FaithDesk</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">{churchName}</span>
-          <button onClick={handleLogout} className="text-sm text-red-500 hover:underline">Logout</button>
-        </div>
+        <a href="/dashboard" className="text-xl font-bold text-green-600">FaithDesk</a>
+        <a href="/dashboard" className="text-sm text-gray-500 hover:underline">Back to dashboard</a>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">Welcome, {churchName}</h2>
-          <p className="text-gray-500 mt-1">Here is an overview of your church activity</p>
+      <div className="max-w-4xl mx-auto px-6 py-8">
+
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Staff & Access</h2>
+            <p className="text-gray-500 text-sm mt-1">Manage who can access your FaithDesk account</p>
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition"
+          >
+            {showForm ? 'Cancel' : '+ Invite staff'}
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-sm text-gray-500">Active members</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{stats.totalMembers}</p>
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+            <p className="text-green-700 text-sm">{success}</p>
           </div>
-          <div className="bg-green-50 rounded-xl border border-green-100 p-5">
-            <p className="text-sm text-green-600">Last service attendance</p>
-            <p className="text-3xl font-bold text-green-700 mt-1">{stats.presentLastService}</p>
-          </div>
-          <div className="bg-blue-50 rounded-xl border border-blue-100 p-5">
-            <p className="text-sm text-blue-600">This month offering</p>
-            <p className="text-2xl font-bold text-blue-700 mt-1">GHS {stats.thisMonthOffering.toFixed(2)}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-sm text-gray-500">Departments</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{stats.totalDepartments}</p>
+        )}
+
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+          <h3 className="font-medium text-blue-800 text-sm mb-2">Role access levels</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.entries(roleDescriptions).map(([role, desc]) => (
+              <div key={role} className="bg-white rounded-lg p-3">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${roleColors[role]}`}>{role}</span>
+                <p className="text-xs text-gray-500 mt-2">{desc}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <a href="/members" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
-            <p className="font-medium text-gray-800 text-lg mb-1">Members</p>
-            <p className="text-sm text-gray-500">Manage your congregation</p>
-          </a>
-          <a href="/attendance" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
-            <p className="font-medium text-gray-800 text-lg mb-1">Attendance</p>
-            <p className="text-sm text-gray-500">Track Sunday services</p>
-          </a>
-          <a href="/contributions" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
-            <p className="font-medium text-gray-800 text-lg mb-1">Contributions</p>
-            <p className="text-sm text-gray-500">Tithes and offerings</p>
-          </a>
-          <a href="/departments" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
-            <p className="font-medium text-gray-800 text-lg mb-1">Departments</p>
-            <p className="text-sm text-gray-500">Manage groups</p>
-          </a>
-          <a href="/reports" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
-            <p className="font-medium text-gray-800 text-lg mb-1">Reports</p>
-            <p className="text-sm text-gray-500">Financial summaries</p>
-          </a>
-          <a href="/staff" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
-            <p className="font-medium text-gray-800 text-lg mb-1">Staff & Access</p>
-            <p className="text-sm text-gray-500">Manage staff roles</p>
-          </a>
-          <a href="/settings" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
-            <p className="font-medium text-gray-800 text-lg mb-1">Settings</p>
-            <p className="text-sm text-gray-500">Church profile</p>
-          </a>
-        </div>
+        {showForm && (
+          <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+            <h3 className="font-medium text-gray-800 mb-4">Invite new staff member</h3>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
+                <input type="text" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Abena Mensah" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="abena@email.com" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Temporary password</label>
+                <input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="They can change this later" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="admin">Admin — full access</option>
+                  <option value="finance">Finance — contributions and reports</option>
+                  <option value="secretary">Secretary — members and attendance</option>
+                  <option value="viewer">Viewer — read only</option>
+                </select>
+              </div>
+              {error && <p className="text-red-500 text-sm col-span-2">{error}</p>}
+              <div className="col-span-2">
+                <button type="submit" disabled={saving} className="bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition disabled:opacity-50">
+                  {saving ? 'Creating account...' : 'Create staff account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {loading ? (
+          <p className="text-gray-500 text-center py-8">Loading staff...</p>
+        ) : staffList.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+            <p className="text-gray-400 text-lg">No staff members yet</p>
+            <p className="text-gray-400 text-sm mt-1">Click "+ Invite staff" to give someone access</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Role</th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {staffList.map((staff) => (
+                  <tr key={staff.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-800">{staff.full_name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{staff.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${roleColors[staff.role] || 'bg-gray-100 text-gray-600'}`}>
+                        {staff.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button onClick={() => handleDelete(staff.id, staff.email)} className="text-red-400 hover:text-red-600 text-sm">Remove</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )
