@@ -18,13 +18,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const init = async () => {
       try {
-       const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.push('/')
-      return
-    }
-  }
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          router.push('/')
+          return
+        }
         setUser(session.user)
         await fetchStats(session.user.id)
       } catch (err) {
@@ -38,18 +36,15 @@ export default function DashboardPage() {
 
   const fetchStats = async (churchId) => {
     const thisMonth = new Date().toISOString().slice(0, 7)
-
     const [membersRes, departmentsRes, contributionsRes, servicesRes] = await Promise.all([
       supabase.from('members').select('id', { count: 'exact' }).eq('church_id', churchId).eq('status', 'active'),
       supabase.from('departments').select('id', { count: 'exact' }).eq('church_id', churchId),
       supabase.from('contributions').select('amount').eq('church_id', churchId).gte('contributed_on', thisMonth + '-01'),
       supabase.from('services').select('id').eq('church_id', churchId).order('service_date', { ascending: false }).limit(1),
     ])
-
     const totalMembers = membersRes.count || 0
     const totalDepartments = departmentsRes.count || 0
     const thisMonthOffering = (contributionsRes.data || []).reduce((sum, c) => sum + parseFloat(c.amount || 0), 0)
-
     let presentLastService = 0
     if (servicesRes.data && servicesRes.data.length > 0) {
       const lastServiceId = servicesRes.data[0].id
@@ -60,7 +55,6 @@ export default function DashboardPage() {
         .eq('present', true)
       presentLastService = attendanceRes.count || 0
     }
-
     setStats({ totalMembers, presentLastService, thisMonthOffering, totalDepartments })
   }
 
@@ -88,13 +82,11 @@ export default function DashboardPage() {
           <button onClick={handleLogout} className="text-sm text-red-500 hover:underline">Logout</button>
         </div>
       </nav>
-
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800">Welcome, {churchName}</h2>
           <p className="text-gray-500 mt-1">Here is an overview of your church activity</p>
         </div>
-
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-100 p-5">
             <p className="text-sm text-gray-500">Active members</p>
@@ -113,7 +105,6 @@ export default function DashboardPage() {
             <p className="text-3xl font-bold text-gray-800 mt-1">{stats.totalDepartments}</p>
           </div>
         </div>
-
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <a href="/members" className="bg-white rounded-xl border border-gray-100 p-6 hover:border-green-300 transition">
             <p className="font-medium text-gray-800 text-lg mb-1">Members</p>
