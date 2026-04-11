@@ -18,20 +18,32 @@ export default function DashboardPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
+        // FIXED: Use getUser() instead of getSession()
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error || !user) {
           router.push('/')
           return
         }
-        setUser(session.user)
-        await fetchStats(session.user.id)
+        setUser(user)
+        await fetchStats(user.id)
       } catch (err) {
         router.push('/')
       } finally {
         setLoading(false)
       }
     }
+
     init()
+
+    // FIXED: Listen for auth changes so real sign-outs are handled
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        router.push('/')
+      }
+    })
+
+    // Cleanup listener on unmount
+    return () => subscription.unsubscribe()
   }, [router])
 
   const fetchStats = async (churchId) => {
